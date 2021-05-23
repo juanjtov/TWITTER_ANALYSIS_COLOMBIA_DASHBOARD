@@ -64,7 +64,7 @@ def clean_tweet(tweet):
 
 
 #CREATE THE STREAM LISTENER
-runtime = 60 #Stream for 60 minutes
+runtime = 1 #Stream for 60 minutes
 myStreamListener = MyStreamListener()
 myStream = tweepy.Stream(auth = api.auth, listener = myStreamListener)
 myStream.filter(languages=['es'], track = Settings.TRACK_WORDS, is_async=True)

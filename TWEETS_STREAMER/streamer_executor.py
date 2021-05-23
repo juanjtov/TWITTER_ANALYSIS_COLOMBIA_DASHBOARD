@@ -57,8 +57,8 @@ test_executor = Executor(topic=TOPIC, project=PROJECT, task_cmd=sample_task, sub
 # add a cloud logging handler and stderr logging handler
 # job_cloud_handler = CloudLoggingHandler(on_gce=True, logname=test_executor.subname)
 # test_executor.job_log.addHandler(job_cloud_handler)
-# test_executor.job_log.addHandler(ch)
-# test_executor.job_log.setLevel(logging.DEBUG)
+test_executor.job_log.addHandler(ch)
+test_executor.job_log.setLevel(logging.DEBUG)
 
 
 # watches indefinitely

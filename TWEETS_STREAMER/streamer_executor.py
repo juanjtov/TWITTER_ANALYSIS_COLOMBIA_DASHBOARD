@@ -31,12 +31,12 @@ from cron_executor import Executor
 PROJECT = 'twitternlp-314312'  # change this to match your project
 TOPIC = 'start-streamer'
 
-#script_path = os.path.abspath(os.path.join(os.getcwd(), 'run_streamer.sh'))
+script_path = os.path.abspath(os.path.join(os.getcwd(), 'main.py'))
 
-#sample_task = "source %s" % script_path
+sample_task = "python3 -u %s" % script_path
 #sample_task = "source run_streamer.sh"
 ##
-sample_task = "python3 main.py"
+# sample_task = "python3 main.py"
 
 
 root_logger = logging.getLogger('cron_executor')

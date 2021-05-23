@@ -56,7 +56,7 @@ class CloudLoggingHandler(logging.Handler):
                  labels={},
                  project_id=None,
                  on_gce=False,
-                 async=True):
+                 asyncr=True):
 
         super(CloudLoggingHandler, self).__init__()
 
@@ -102,7 +102,7 @@ class CloudLoggingHandler(logging.Handler):
         credentials = credentials.create_scoped(LOGGING_SCOPES)
         credentials.authorize(http)
         self.credentials = credentials
-        self.async = async
+        self.asyncr = asyncr
         self.client = discovery.build("logging", "v1beta3", http=http)
         self.logname = logname
         self.labels = labels
@@ -110,7 +110,7 @@ class CloudLoggingHandler(logging.Handler):
         self.labels["compute.googleapis.com/resource_type"] = 'instance'
 
     def write_log(self, record):
-        if self.async:
+        if self.asyncr:
             http = httplib2.Http()
             self.credentials.authorize(http)
         else:
@@ -166,7 +166,7 @@ class CloudLoggingHandler(logging.Handler):
             sys.stderr.write(e.message + '\n')
 
     def emit(self, record):
-        if self.async:
+        if self.asyncr:
             # send the logging event to logging service in a thread so
             # main program is not blocked
             http_writer = Thread(target=self.write_log, args=(record, ))

@@ -35,6 +35,7 @@ TOPIC = 'start-streamer'
 
 #sample_task = "source %s" % script_path
 #sample_task = "source run_streamer.sh"
+##
 sample_task = "python3 main.py"
 
 

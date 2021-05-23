@@ -162,6 +162,7 @@ class Executor():
         return resp
 
     def run_task(self, msg):
+        print(self.task_cmd)
         proc = Popen(self.task_cmd, stdout=PIPE, shell=True)
         stdout_reader = AsynchronousFileReader(proc.stdout, self.io_queue)
         stdout_reader.start()
@@ -197,7 +198,7 @@ class Executor():
 
         retcode = proc.poll()
         if retcode is not None:
-            # TODO if error - expire lease immediately?
+            # to_do if error - expire lease immediately?
             # process exited
             log.debug("process ended")
         return retcode
@@ -214,7 +215,7 @@ class Executor():
                 # str(pubsub_message.get('data')))
                 # Get the message's ack ID
                 cmd_retcode = self.run_task(received_message)
-                # TODO if cmd_retcode == 0, the cmd exited clean
+                # to_do if cmd_retcode == 0, the cmd exited clean
                 # the retry logic could get complex and is left as an exercise
                 ack_ids.append(received_message.get('ackId'))
                 # in this case - should ack per message instead of batch

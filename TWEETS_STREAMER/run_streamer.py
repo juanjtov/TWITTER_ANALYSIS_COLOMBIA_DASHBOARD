@@ -1,6 +1,7 @@
 import tweepy
 import time
 import re
+from textblob import TextBlob
 
 
 from config import Credentials, Settings
@@ -31,6 +32,7 @@ class MyStreamListener(tweepy.StreamListener):
         text = deEmojify(status.text)
         cleaned_text = clean_tweet(text)
         print(cleaned_text)
+        tweet_info(status, cleaned_text)
         
              
 
@@ -61,7 +63,40 @@ def clean_tweet(tweet):
     return ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t]) \
                                 |(\w+:\/\/\S+)", " ", tweet).split()) 
 
+def tweet_info(status, cleaned_text):
+    '''
+    Extract all the information from the streamed tweet
+    '''
+    tweet_dict = {}
+    tweet_dict['id_tweet'] = status.id_str
+    tweet_dict['created_at'] = status.created_at
+    tweet_dict['cleaned_tweet'] = cleaned_text
+    tweet_dict['user_created_at'] = status.user.created_at
 
+    #SENTIMENT ANALYSIS
+    tweet_dict['sentiment'] = TextBlob(cleaned_text).sentiment
+    tweet_dict['polarity'] = tweet_dict['sentiment'].polarity
+    tweet_dict['subjectivity'] = tweet_dict['sentiment'].subjectivity
+
+    tweet_dict['user_created_at'] = status.user.created_at
+    tweet_dict['user_location'] = deEmojify(status.user.location)
+    tweet_dict['user_description'] = deEmojify(status.user.description)
+    tweet_dict['user_followers_count'] =status.user.followers_count
+    
+    tweet_dict['longitude'] = None
+    tweet_dict['latitude'] = None
+
+    if status.coordinates:
+        tweet_dict['longitude'] = status.coordinates['coordinates'][0]
+        tweet_dict['latitude'] = status.coordinates['coordinates'][1]
+
+    tweet_dict['retweet_count'] = status.retweet_count
+    tweet_dict['favorite_count'] = status.favorite_count
+
+    print(tweet_dict)
+    
+
+    return tweet_dict
 
 #CREATE THE STREAM LISTENER
 runtime = 1 #Stream for 60 minutes

@@ -31,7 +31,7 @@ class MyStreamListener(tweepy.StreamListener):
         # Clean The text
         text = deEmojify(status.text)
         cleaned_text = clean_tweet(text)
-        print(cleaned_text)
+        #print(cleaned_text)
         extracted_tweet= tweet_info(status, cleaned_text)
         print(extracted_tweet)
              

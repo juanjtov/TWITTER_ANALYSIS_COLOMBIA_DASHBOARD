@@ -4,5 +4,5 @@ steps:
   - name: 'gcr.io/cloud-builders/gcloud'
     args: ['functions', 'deploy', 'twittrstreamer_function', '--trigger-topic=start-streamer', 
     '--runtime=python38', '--entry-point=triggering_streamer',
-    '--source=https://source.cloud.google.com/twitternlp-314312/github_juanjtov_twitter_analysis_colombia_dashboard/+/main:TWEETS_STREAMER']
+    '--source=https://source.cloud.google.com/twitternlp-314312/github_juanjtov_twitter_analysis_colombia_dashboard/+/main']
     

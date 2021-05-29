@@ -32,8 +32,8 @@ class MyStreamListener(tweepy.StreamListener):
         text = deEmojify(status.text)
         cleaned_text = clean_tweet(text)
         print(cleaned_text)
-        tweet_info(status, cleaned_text)
-        
+        extracted_tweet= tweet_info(status, cleaned_text)
+        print(extracted_tweet)
              
 
     def on_error(self, status_code):
@@ -93,8 +93,7 @@ def tweet_info(status, cleaned_text):
     tweet_dict['retweet_count'] = status.retweet_count
     tweet_dict['favorite_count'] = status.favorite_count
 
-    print(tweet_dict)
-    
+       
 
     return tweet_dict
 

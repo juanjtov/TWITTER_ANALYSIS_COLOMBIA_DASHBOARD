@@ -1,10 +1,12 @@
 import tweepy
 import time
-import re
+from datetime import datetime
+import re, json
 from textblob import TextBlob
 
+from google.cloud import pubsub_v1
 
-from config import Credentials, Settings
+from config import Credentials, Settings, GcloudSettings
 
 #Authentication
 auth  = tweepy.OAuthHandler(Credentials.API_KEY, \
@@ -21,9 +23,7 @@ api = tweepy.API(auth)
 class MyStreamListener(tweepy.StreamListener):
 
     def on_status(self, status):
-        
-       
-          # if status.retweeted:
+        # if status.retweeted:
         # # Avoid retweeted info, and only original tweets will 
         # # be received
         #     return True
@@ -31,11 +31,12 @@ class MyStreamListener(tweepy.StreamListener):
         # Clean The text
         text = deEmojify(status.text)
         cleaned_text = clean_tweet(text)
-        print(cleaned_text)
+        #Extract the tweet information
         extracted_tweet= tweet_info(status, cleaned_text)
-        print(extracted_tweet)
+        #Publish to pub/sub
+        publish_tweets(GcloudSettings.PROJECT_ID, GcloudSettings.TOPIC_ID, extracted_tweet)
+        
              
-
     def on_error(self, status_code):
         '''
         Since Twitter API has rate limits, 
@@ -69,16 +70,16 @@ def tweet_info(status, cleaned_text):
     '''
     tweet_dict = {}
     tweet_dict['id_tweet'] = status.id_str
-    tweet_dict['created_at'] = status.created_at
+    #tweet_dict['created_at'] = datetime.datetime.fromtimestamp(status.created_at).strftime('%Y-%m-%d %H:%M:%S')
+    tweet_dict['created_at'] = status.created_at.strftime('%Y-%m-%d %H:%M:%S')
     tweet_dict['cleaned_tweet'] = cleaned_text
-    tweet_dict['user_created_at'] = status.user.created_at
+    #tweet_dict['user_created_at'] = status.user.created_at
 
     #SENTIMENT ANALYSIS
     tweet_dict['sentiment'] = TextBlob(cleaned_text).sentiment
     tweet_dict['polarity'] = tweet_dict['sentiment'].polarity
     tweet_dict['subjectivity'] = tweet_dict['sentiment'].subjectivity
 
-    tweet_dict['user_created_at'] = status.user.created_at
     tweet_dict['user_location'] = deEmojify(status.user.location)
     tweet_dict['user_description'] = deEmojify(status.user.description)
     tweet_dict['user_followers_count'] =status.user.followers_count
@@ -93,14 +94,36 @@ def tweet_info(status, cleaned_text):
     tweet_dict['retweet_count'] = status.retweet_count
     tweet_dict['favorite_count'] = status.favorite_count
 
-       
-
     return tweet_dict
 
-#CREATE THE STREAM LISTENER
-runtime = 1 #Stream for 60 minutes
-myStreamListener = MyStreamListener()
-myStream = tweepy.Stream(auth = api.auth, listener = myStreamListener)
-myStream.filter(languages=['es'], track = Settings.TRACK_WORDS, is_async=True)
-time.sleep(runtime*60)
-myStream.disconnect()
+def publish_tweets(project_id, topic_id, data):
+    """Publishes the tweets to pub_sub from_tweepy."""
+    # Initialize a Publisher client.
+    client = pubsub_v1.PublisherClient()
+    # Create a fully qualified identifier of form `projects/{project_id}/topics/{topic_id}`
+    topic_path = client.topic_path(project_id, topic_id)
+
+    try:
+
+        # Data sent to Cloud Pub/Sub must be a bytestring.
+        # Convert a Dictionary to bytestrings
+        data = json.dumps(data).encode('utf-8')
+        
+        # When you publish a message, the client returns a future.
+        api_future = client.publish(topic_path, data)
+        message_id = api_future.result()
+
+        print(f"Published {data} to {topic_path}: {message_id}")
+
+    except Exception as e:
+        raise
+
+if __name__=="__main__":
+
+    #CREATE THE STREAM LISTENER
+    runtime = 1 #Stream for 60 minutes
+    myStreamListener = MyStreamListener()
+    myStream = tweepy.Stream(auth = api.auth, listener = myStreamListener)
+    myStream.filter(languages=['es'], track = Settings.TRACK_WORDS, is_async=True)
+    time.sleep(runtime*60)
+    myStream.disconnect()

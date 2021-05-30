@@ -12,4 +12,7 @@ class Settings:
     TRACK_WORDS = ['Colombia','colombia']
     
     
-
+class GcloudSettings:
+    #PROJECT AND TOPIC IDENTIFIERS
+    PROJECT_ID = os.getenv('PROJECT')
+    TOPIC_ID = os.getenv('TOPIC_FROM_TWEEPY')

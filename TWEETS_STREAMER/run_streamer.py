@@ -121,9 +121,9 @@ def publish_tweets(project_id, topic_id, data):
 if __name__=="__main__":
 
     #CREATE THE STREAM LISTENER
-    runtime = 60 #Stream for 60 minutes
+    #runtime = 60 #Stream for 60 minutes
     myStreamListener = MyStreamListener()
     myStream = tweepy.Stream(auth = api.auth, listener = myStreamListener)
     myStream.filter(languages=['es'], track = Settings.TRACK_WORDS, is_async=True)
-    time.sleep(runtime*60)
+    time.sleep(5000)
     myStream.disconnect()

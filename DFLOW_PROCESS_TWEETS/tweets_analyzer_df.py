@@ -20,17 +20,25 @@ from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
 
 
-# class WordExtractingDoFn(beam.DoFn):
-#   """Parse each line of input text into words."""
-#   def process(self, element):
-#     """Returns an iterator over the words of this element.
-#     The element is a line of text.  If the line is blank, note that, too.
-#     Args:
-#       element: the element being processed
-#     Returns:
-#       The processed element.
-#     """
-#     return re.findall(r'[\w\']+', element, re.UNICODE)
+class WriteToGCS(DoFn):
+    def __init__(self, output_path):
+        self.output_path = output_path
+
+    def process(self, key_value):
+        """Write messages in a batch to Google Cloud Storage."""
+
+        # ts_format = "%H:%M"
+        # window_start = window.start.to_utc_datetime().strftime(ts_format)
+        # window_end = window.end.to_utc_datetime().strftime(ts_format)
+        shard_id, batch = key_value
+        filename = "-".join([self.output_path, 'window_start', 'window_end', 'str(shard_id)'])
+
+        with io.gcsio.GcsIO().open(filename=filename, mode="w") as f:
+            for message_body, publish_time in batch:
+                print(f"Message Body:{message_body} ")
+                print('**************************************')
+                print(f"Publish Time{publish_time}")
+                f.write(f"{message_body},{publish_time}\n".encode("utf-8"))
 
 #Write your pub/sub topic
 TOPIC = "projects/twitternlp-314312/topics/from-tweepy"
@@ -53,8 +61,19 @@ def run():
         help='Input topic to read Tweets')
     parser.add_argument(
         '--output_path',
-        default='/home/juanjtov/DEVELOPER/MY_PROJECTS/TWITTER_ANALYSIS_COLOMBIA_DASHBOARD/DFLOW_PROCESS_TWEETS/',
-        help='Path of the output GCS file including the prefix.')
+        default='/tmp/samples/',
+        help='Path of the output  file including the prefix.')
+
+    # parser.add_argument(
+    #     '--staging_location',
+    #     default='gs://tweets_pubsub_buckt/staging/',
+    #     help='Staging Location')
+
+    # parser.add_argument(
+    #     '--temp_location',
+    #     default='gs://tweets_pubsub_buckt/staging/',
+    #     help='Staging Location')
+
     known_args, pipeline_args = parser.parse_known_args()
     print(known_args)
     print('///****///')
@@ -64,7 +83,7 @@ def run():
     #Create the Pipeline
     # Set `save_main_session` to True so DoFns can access globally imported modules.
     '''
-    save_main_session caus the state of the global namespace to be pickled and loaded on the Dataflow worker
+    save_main_session cause the state of the global namespace to be pickled and loaded on the Dataflow worker
     '''
     pipeline_options = PipelineOptions(
         pipeline_args, streaming=True, save_main_session=True
@@ -82,11 +101,11 @@ def run():
 
             | 'Read from Pub/Sub' >> io.ReadFromPubSub(topic=TOPIC).with_output_types(bytes)
             | 'Decode' >> beam.Map(lambda x: x.decode('utf-8'))
-            | 'Write' >> io.WriteToText(output_path)
+            | 'write to GCS' >> beam.ParDo(WriteToGCS(output_path))
+            # | 'Write to GCS' >> io.WriteToText(output_path)
         ) 
 
-    # result = p.run()
-    # result.wait_until_finish()
+   
     
 
 if __name__ == '__main__':

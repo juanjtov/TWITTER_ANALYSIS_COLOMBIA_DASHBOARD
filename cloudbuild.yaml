@@ -1,4 +1,10 @@
 steps:
+  - name: 'docker.io/library/python:3.9'
+    entrypoint: /bin/sh
+    # Run pip install and pytest in the same build step
+    # (pip packages won't be preserved in future steps!)
+    args: [-c, 'pip install -r requirements.txt && pytest']
+    dir: '--source=https://source.developers.google.com/projects/twitternlp-314312/repos/github_juanjtov_twitter_analysis_colombia_dashboard/moveable-aliases/main/paths/TWEETS_STREAMER'
   
   - name: 'gcr.io/cloud-builders/gcloud'
     args: ['functions', 'deploy', 'twittrstreamer_function', '--trigger-topic=start-streamer', 

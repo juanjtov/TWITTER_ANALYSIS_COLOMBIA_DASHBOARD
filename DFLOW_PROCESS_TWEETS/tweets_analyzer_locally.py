@@ -20,29 +20,41 @@ from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
 
 
+# class WordExtractingDoFn(beam.DoFn):
+#   """Parse each line of input text into words."""
+#   def process(self, element):
+#     """Returns an iterator over the words of this element.
+#     The element is a line of text.  If the line is blank, note that, too.
+#     Args:
+#       element: the element being processed
+#     Returns:
+#       The processed element.
+#     """
+#     return re.findall(r'[\w\']+', element, re.UNICODE)
+
 #Write your pub/sub topic
 TOPIC = "projects/twitternlp-314312/topics/from-tweepy"
 
-class WriteToGCS(DoFn):
+class WriteToGCS(beam.DoFn):
     def __init__(self, output_path):
         self.output_path = output_path
+    
+    def process(self, elements):
+        """Write messages in a batch to store locally."""
+        print('******ELEMENTS********')
+        print(elements)
+        print('******END ELEMENT*******')
 
-    def process(self, key_value):
-        """Write messages in a batch to Google Cloud Storage."""
-
-        # ts_format = "%H:%M"
-        # window_start = window.start.to_utc_datetime().strftime(ts_format)
-        # window_end = window.end.to_utc_datetime().strftime(ts_format)
-        shard_id, batch = key_value
-        filename = "-".join([self.output_path, 'window_start', 'window_end', 'str(shard_id)'])
-
-        with io.gcsio.GcsIO().open(filename=filename, mode="w") as f:
-            for message_body, publish_time in batch:
-                print(f"Message Body:{message_body} ")
-                print('**************************************')
-                print(f"Publish Time{publish_time}")
-                f.write(f"{message_body},{publish_time}\n".encode("utf-8"))
-
+        filename = "-".join(['timestamp', 'window_start', 'window_end', 'str(shard_id)'])
+        with io.WriteToText(self.output_path).open(filename=filename, mode="w") as f:
+            for element in elements:
+                f.write(f"{element.getKey()},{element.getValue()}\n".encode("utf-8"))
+            # for message_body, publish_time in batch:
+            #     print(f"Message Body:{message_body} ")
+            #     print('**************************************')
+            #     print(f"Publish Time{publish_time}")
+            #     f.write(f"{message_body},{publish_time}\n".encode("utf-8"))
+        
 
 
 class PubSubToDict(beam.DoFn):
@@ -65,17 +77,6 @@ def run():
         '--output_path',
         default='/tmp/samples/',
         help='Path of the output  file including the prefix.')
-
-    # parser.add_argument(
-    #     '--staging_location',
-    #     default='gs://tweets_pubsub_buckt/staging/',
-    #     help='Staging Location')
-
-    # parser.add_argument(
-    #     '--temp_location',
-    #     default='gs://tweets_pubsub_buckt/staging/',
-    #     help='Staging Location')
-
     known_args, pipeline_args = parser.parse_known_args()
     print(known_args)
     print('///****///')
@@ -93,10 +94,6 @@ def run():
 
     #Output_types is a way to declare Type Hints Inline
     with Pipeline(options=pipeline_options) as pipeline:
-        '''
-        The DoFn object that you pass to ParDo contains 
-        the processing logic that gets applied to the elements in the input collection.
-        '''
     
         (
             pipeline
@@ -107,11 +104,11 @@ def run():
 
             | 'Read from Pub/Sub' >> io.ReadFromPubSub(topic=TOPIC).with_output_types(bytes)
             | 'Decode' >> beam.Map(lambda x: x.decode('utf-8'))
-            | 'write to GCS' >> beam.ParDo(WriteToGCS(output_path))
-            # | 'Write to GCS' >> io.WriteToText(output_path)
+            | 'write to someplace' >> beam.ParDo(WriteToGCS(output_path))
         ) 
 
-   
+    # result = p.run()
+    # result.wait_until_finish()
     
 
 if __name__ == '__main__':
